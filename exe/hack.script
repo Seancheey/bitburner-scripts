@@ -1,0 +1,2 @@
+sleep(args[1] | 0)
+hack(args[0])

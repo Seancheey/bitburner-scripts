@@ -1,0 +1,68 @@
+var findExploitScript = "find-exploit.js"
+var exploitScript = "exploit.script"
+
+var openPortScripts = {}
+openPortScripts["BruteSSH.exe"] = brutessh
+openPortScripts["FTPCrack.exe"] = ftpcrack
+openPortScripts["relaySMTP.exe"] = relaysmtp
+openPortScripts["HTTPWorm.exe"] = httpworm
+openPortScripts["SQLInject.exe"] = sqlinject
+
+function tryRoot(hostname) {
+	if (hasRootAccess(hostname)) {
+		return true;
+	}
+
+	var numScripts = 0;
+	for (script in openPortScripts) {
+		if (fileExists(script, "home")) {
+			numScripts++;
+			openPortScripts[script](hostname);
+		}
+	}
+	if (numScripts >= getServerNumPortsRequired(hostname)) {
+		nuke(hostname);
+		return true;
+	}
+	toast("Unable to gain root access to '" + hostname + "'", "info", 5000);
+	return false;
+}
+
+function scanAndSpread() {
+	var neighbors = scan(getHostname())
+	for (var i in neighbors) {
+		neighbor = neighbors[i]
+		if (tryRoot(neighbor)) {
+			scriptKill(exploitScript, neighbor);
+			var totalRam = getServerMaxRam(neighbor)
+			var usedRam = getServerUsedRam(neighbor)
+			var leftRam = totalRam - usedRam;
+			print(neighbor + " has " + leftRam + "RAM left.")
+			if (leftRam < getScriptRam(getScriptName())) {
+				print("Unable to execute " + getScriptName() + "on '" + neighbor + "' due to low RAM.");
+			} else if (fileExists(getScriptName(), neighbor)) {
+				print("Avoid copying script to '" + neighbor + "' to repeatly executing " + getScriptName());
+			} else {
+				scp(exploitScript, neighbor)
+				scp(findExploitScript, neighbor)
+				scp(getScriptName(), neighbor)
+				exec(getScriptName(), neighbor)
+				toast(neighbor + ": " + getScriptName() + " is running", "info", 5000)
+			}
+		}
+	}
+}
+
+function exploit() {
+	if (getHostname() == "home") {
+		return;
+	}
+	spawn(findExploitScript, 1)
+}
+
+function main() {
+	scanAndSpread();
+	exploit();
+}
+
+main()

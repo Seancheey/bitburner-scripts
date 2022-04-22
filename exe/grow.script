@@ -1,0 +1,2 @@
+sleep(args[1]|0)
+grow(args[0])

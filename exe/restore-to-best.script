@@ -1,0 +1,13 @@
+var target = args[0];
+
+var securityThresh = getServerMinSecurityLevel(target) + 1;
+
+// Infinite loop that continously hacks/grows/weakens the target server
+while (true) {
+    if (getServerSecurityLevel(target) > securityThresh) {
+        weaken(target);
+    } else {
+        grow(target);
+    }
+    print("money available: " + Math.round(getServerMoneyAvailable(target) / getServerMaxMoney(target) * 100) + "%")
+}
